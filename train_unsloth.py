@@ -11,9 +11,12 @@ def main():
     parser.add_argument("--val_path", type=str, default="data/processed/hybrid/val.jsonl")
     parser.add_argument("--output_dir", type=str, default="output/unsloth_hybrid")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=1)
-    parser.add_argument("--grad_acc", type=int, default=32)
-    parser.add_argument("--max_length", type=int, default=8192)
+    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--grad_acc", type=int, default=16)
+    # 8192 kept spiking to a 71.78GB single allocation on the same outlier-length
+    # example regardless of batch_size (SDPA math backend, quadratic in seq_len) -
+    # 4096 cuts that worst case ~4x. A few more examples truncate, worth it to stop crashing.
+    parser.add_argument("--max_length", type=int, default=4096)
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from, or 'True' for latest")
     args = parser.parse_args()
 
