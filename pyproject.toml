@@ -17,11 +17,19 @@ dependencies = [
     "pyyaml",
     "seaborn",
     "tensorboard",
-    "torch>=2.4.0",
+    "torch==2.10.0",
     "transformers",
     "trl",
     "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-rocm"
+url = "https://download.pytorch.org/whl/rocm7.1"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-rocm" }
 
 [tool.uv]
 package = false
