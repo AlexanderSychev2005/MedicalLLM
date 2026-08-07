@@ -19,15 +19,18 @@ def main():
 
     max_seq_length = args.max_length
     dtype = torch.bfloat16  # MI300X - native BF16, no need for FP16
-    # 192GB fits the 70B model in full BF16 precision - skip 4-bit quantization noise
-    # and ROCm's less mature bnb dequant kernels. ~146GB weights+LoRA, ~45GB headroom.
-    load_in_4bit = False
+    # Back to 4-bit QLoRA: this ROCm/Unsloth build has no working flash-attention
+    # (FA2/xformers both unavailable, math SDPA fallback only), which makes attention
+    # memory scale quadratically with seq_len. Full BF16 left only ~40GB free after the
+    # 146GB model+LoRA, and even batch_size=1/no packing still OOM'd on longer examples
+    # (71.78GB single allocation). 4-bit frees ~100GB (weights ~35-40GB instead of 140GB),
+    # giving enough headroom to absorb that worst case. Uses the ROCm-specific bitsandbytes
+    # pre-release build (fixes the known 4-bit decode NaN bug on AMD).
+    load_in_4bit = True
 
     print("1. Loading Llama 3.1 70B via Unsloth...")
-    # Full-precision repo, not the -bnb-4bit checkpoint - that one is pre-quantized and
-    # can't be meaningfully loaded back out to BF16.
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="unsloth/Meta-Llama-3.1-70B-Instruct",
+        model_name="unsloth/Meta-Llama-3.1-70B-Instruct-bnb-4bit",
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
