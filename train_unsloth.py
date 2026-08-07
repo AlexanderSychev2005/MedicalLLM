@@ -11,8 +11,8 @@ def main():
     parser.add_argument("--val_path", type=str, default="data/processed/hybrid/val.jsonl")
     parser.add_argument("--output_dir", type=str, default="output/unsloth_hybrid")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--grad_acc", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--grad_acc", type=int, default=4)
     # 8192 kept spiking to a 71.78GB single allocation on the same outlier-length
     # example regardless of batch_size (SDPA math backend, quadratic in seq_len) -
     # 4096 cuts that worst case ~4x. A few more examples truncate, worth it to stop crashing.
@@ -31,13 +31,12 @@ def main():
     # pre-release build (fixes the known 4-bit decode NaN bug on AMD).
     load_in_4bit = True
 
-    # Switched 70B -> Qwen2.5-32B-Instruct: Qwen2.5 benchmarks ahead of same-size Llama
-    # on medical/reasoning tasks, and at 32B the quadratic math-backend attention penalty
-    # (no working flash-attention on this ROCm build) is small enough to train reliably
-    # and fast without the memory fights the 70B run hit.
-    print("1. Loading Qwen2.5 32B via Unsloth...")
+    # Switched 32B -> Qwen2.5-14B-Instruct: this run is for practice/proving the SFT
+    # pipeline works, not squeezing max quality - 14B still benchmarks close to
+    # GPT-4o-mini on medical tasks, and roughly halves per-epoch time again vs 32B.
+    print("1. Loading Qwen2.5 14B via Unsloth...")
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="unsloth/Qwen2.5-32B-Instruct-bnb-4bit",
+        model_name="unsloth/Qwen2.5-14B-Instruct-bnb-4bit",
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
