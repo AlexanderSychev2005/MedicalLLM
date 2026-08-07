@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv
+
+# PhysioNet/MIMIC-derived and other dataset data - DUA-restricted, never commit
+data/
+unsloth_compiled_cache/
+output/
+.ipynb_checkpoints/

@@ -1,0 +1,30 @@
+
+=== Example 1 [MedAlign (Real World)] ===
+
+=== Example 2 [MedAlign (Real World)] ===
+
+=== Example 3 [MedAlign (Real World)] ===
+
+=== Example 4 [MedAlign (Real World)] ===
+
+=== Example 5 [MedAlign (Real World)] ===
+
+=== Example 6 [Asclepius (Synthetic EHR)] ===
+
+=== Example 7 [Asclepius (Synthetic EHR)] ===
+
+=== Example 8 [Asclepius (Synthetic EHR)] ===
+
+=== Example 9 [Asclepius (Synthetic EHR)] ===
+
+=== Example 10 [Asclepius (Synthetic EHR)] ===
+
+=== Example 11 [MedQA (Theory/USMLE)] ===
+
+=== Example 12 [MedQA (Theory/USMLE)] ===
+
+=== Example 13 [MedQA (Theory/USMLE)] ===
+
+=== Example 14 [MedQA (Theory/USMLE)] ===
+
+=== Example 15 [MedQA (Theory/USMLE)] ===
