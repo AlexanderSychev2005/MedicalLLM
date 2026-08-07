@@ -11,8 +11,8 @@ def main():
     parser.add_argument("--val_path", type=str, default="data/processed/hybrid/val.jsonl")
     parser.add_argument("--output_dir", type=str, default="output/unsloth_hybrid")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--grad_acc", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--grad_acc", type=int, default=32)
     parser.add_argument("--max_length", type=int, default=8192)
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from, or 'True' for latest")
     args = parser.parse_args()
@@ -68,7 +68,11 @@ def main():
         learning_rate=2e-4,
         fp16=False,
         bf16=True,  # AMD MI300X loves BF16
-        packing=True,  # pack short examples together, less padding waste
+        # packing forces every step to full max_seq_length; this ROCm build has no
+        # flash-attention (FA2/xformers both unavailable), so SDPA falls back to the
+        # quadratic-memory "math" backend - packing here means guaranteed-worst-case
+        # attention memory on every single step. Off until FA is available.
+        packing=False,
         logging_steps=10,
         report_to="tensorboard",
         logging_dir=f"{args.output_dir}/runs",
