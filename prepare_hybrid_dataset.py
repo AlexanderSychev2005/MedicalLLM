@@ -38,6 +38,7 @@ N_RADIOLOGY = 5000
 N_DISCHARGE_IE = 3000
 N_MEDCASEREASONING_TRAIN = 6000
 ICD_TOP_K = 200
+TEST_HOLDOUT = 300  # per-task held-out slice for tasks that didn't already have one
 
 
 def msg(system, user, assistant):
@@ -53,16 +54,21 @@ def msg(system, user, assistant):
 # ---------------------------------------------------------------- medqa ----
 def load_medqa():
     rows = [json.loads(l) for l in open(f"{RAW}/medqa/medical_meadow_medqa.json", encoding="utf-8")]
-    rows = random.sample(rows, min(N_MEDQA, len(rows)))
-    train = [
-        msg(
-            "You are a highly skilled medical professional. Answer the medical question accurately.",
-            f"{r['instruction']}\n\n{r['input']}",
-            r["output"],
-        )
-        for r in rows
-    ]
-    return train, []
+    random.shuffle(rows)
+    test_rows, pool = rows[:TEST_HOLDOUT], rows[TEST_HOLDOUT:]
+    train_rows = random.sample(pool, min(N_MEDQA, len(pool)))
+
+    def to_examples(rs):
+        return [
+            msg(
+                "You are a highly skilled medical professional. Answer the medical question accurately.",
+                f"{r['instruction']}\n\n{r['input']}",
+                r["output"],
+            )
+            for r in rs
+        ]
+
+    return to_examples(train_rows), to_examples(test_rows)
 
 
 # -------------------------------------------------------------- medalign ---
@@ -122,17 +128,22 @@ def load_pubmedqa(test_size=100):
 # ------------------------------------------------------------------ bhc ----
 def load_bhc():
     rows = list(csv.DictReader(open(f"{RAW}/mimic_iv_ext_bhc.csv", encoding="utf-8")))
-    rows = random.sample(rows, min(N_BHC, len(rows)))
-    train = [
-        msg(
-            "You are a medical AI assistant. Summarize the hospital admission into a Brief Hospital Course, "
-            "as written by a physician.",
-            r["input"].replace("summarize:\n", "", 1).strip(),
-            r["target"].strip(),
-        )
-        for r in rows
-    ]
-    return train, []
+    random.shuffle(rows)
+    test_rows, pool = rows[:TEST_HOLDOUT], rows[TEST_HOLDOUT:]
+    train_rows = random.sample(pool, min(N_BHC, len(pool)))
+
+    def to_examples(rs):
+        return [
+            msg(
+                "You are a medical AI assistant. Summarize the hospital admission into a Brief Hospital Course, "
+                "as written by a physician.",
+                r["input"].replace("summarize:\n", "", 1).strip(),
+                r["target"].strip(),
+            )
+            for r in rs
+        ]
+
+    return to_examples(train_rows), to_examples(test_rows)
 
 
 # ------------------------------------------------------------- icd_coding --
@@ -149,9 +160,10 @@ def load_icd_coding():
     for r in diag_top.itertuples():
         by_hadm[int(r.hadm_id)].add(r.long_title)
 
-    target_ids = set(random.sample(list(by_hadm.keys()), min(N_ICD * 3, len(by_hadm))))
+    target_n = N_ICD + TEST_HOLDOUT
+    target_ids = set(random.sample(list(by_hadm.keys()), min(target_n * 3, len(by_hadm))))
 
-    train = []
+    examples = []
     with open(f"{RAW}/mimic_iv_note/note/discharge.csv", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             try:
@@ -161,7 +173,7 @@ def load_icd_coding():
             if hadm_id not in target_ids:
                 continue
             codes = sorted(by_hadm[hadm_id])
-            train.append(
+            examples.append(
                 msg(
                     "You are a certified medical coder. Read the discharge summary and list the relevant "
                     "ICD diagnosis codes (as their descriptive titles).",
@@ -169,9 +181,10 @@ def load_icd_coding():
                     "\n".join(f"- {c}" for c in codes),
                 )
             )
-            if len(train) >= N_ICD:
+            if len(examples) >= target_n:
                 break
-    return train, []
+    random.shuffle(examples)
+    return examples[TEST_HOLDOUT:], examples[:TEST_HOLDOUT]
 
 
 # ------------------------------------------------------------- radiology ---
@@ -195,9 +208,10 @@ def load_radiology():
                     impression,
                 )
             )
-            if len(out) >= N_RADIOLOGY * 2:
+            if len(out) >= (N_RADIOLOGY + TEST_HOLDOUT) * 2:
                 break
-    return random.sample(out, min(N_RADIOLOGY, len(out))), []
+    out = random.sample(out, min(N_RADIOLOGY + TEST_HOLDOUT, len(out)))
+    return out[TEST_HOLDOUT:], out[:TEST_HOLDOUT]
 
 
 # ---------------------------------------------------------- discharge_ie ---
@@ -257,9 +271,10 @@ def load_discharge_ie():
                     json.dumps(sections, ensure_ascii=False, indent=2),
                 )
             )
-            if len(out) >= N_DISCHARGE_IE * 2:
+            if len(out) >= (N_DISCHARGE_IE + TEST_HOLDOUT) * 2:
                 break
-    return random.sample(out, min(N_DISCHARGE_IE, len(out))), []
+    out = random.sample(out, min(N_DISCHARGE_IE + TEST_HOLDOUT, len(out)))
+    return out[TEST_HOLDOUT:], out[:TEST_HOLDOUT]
 
 
 # ------------------------------------------------------------------ direct -
