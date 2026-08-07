@@ -11,8 +11,8 @@ def main():
     parser.add_argument("--val_path", type=str, default="data/processed/hybrid/val.jsonl")
     parser.add_argument("--output_dir", type=str, default="output/unsloth_hybrid")
     parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=2)
-    parser.add_argument("--grad_acc", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--grad_acc", type=int, default=8)
     # 8192 kept spiking to a 71.78GB single allocation on the same outlier-length
     # example regardless of batch_size (SDPA math backend, quadratic in seq_len) -
     # 4096 cuts that worst case ~4x. A few more examples truncate, worth it to stop crashing.
@@ -31,9 +31,13 @@ def main():
     # pre-release build (fixes the known 4-bit decode NaN bug on AMD).
     load_in_4bit = True
 
-    print("1. Loading Llama 3.1 70B via Unsloth...")
+    # Switched 70B -> Qwen2.5-32B-Instruct: Qwen2.5 benchmarks ahead of same-size Llama
+    # on medical/reasoning tasks, and at 32B the quadratic math-backend attention penalty
+    # (no working flash-attention on this ROCm build) is small enough to train reliably
+    # and fast without the memory fights the 70B run hit.
+    print("1. Loading Qwen2.5 32B via Unsloth...")
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="unsloth/Meta-Llama-3.1-70B-Instruct-bnb-4bit",
+        model_name="unsloth/Qwen2.5-32B-Instruct-bnb-4bit",
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
@@ -52,7 +56,9 @@ def main():
     )
 
     print("3. Preparing ChatML Data format...")
-    tokenizer = get_chat_template(tokenizer, chat_template="llama-3.1")
+    # Qwen2.5 uses its own ChatML-style template, not Llama's - if this name is wrong,
+    # Unsloth's error message lists the valid template keys to pick from.
+    tokenizer = get_chat_template(tokenizer, chat_template="qwen-2.5")
     
     def format_chatml(examples):
         texts = [tokenizer.apply_chat_template(msg, tokenize=False, add_generation_prompt=False) for msg in examples["messages"]]
