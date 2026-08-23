@@ -88,8 +88,8 @@ def main():
         bf16=True,
         packing=False,  # start conservative - flip on once a run is confirmed stable
         logging_steps=10,
-        report_to="tensorboard",
-        logging_dir=f"{args.output_dir}/runs",
+        report_to="tensorboard",  # newer TRL dropped logging_dir; defaults under output_dir,
+                                   # or set TENSORBOARD_LOGGING_DIR env var to override
         eval_strategy="steps",
         eval_steps=100,
         save_strategy="steps",
