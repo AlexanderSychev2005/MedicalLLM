@@ -97,9 +97,10 @@ def main():
         output_dir=args.output_dir,
         optim="adamw_8bit",
         seed=42,
-        # Newer TRL moved these from SFTTrainer's own kwargs into SFTConfig.
+        # Newer TRL (1.10.0) moved these from SFTTrainer's own kwargs into SFTConfig,
+        # and renamed max_seq_length -> max_length (confirmed via dataclasses.fields).
         dataset_text_field="text",
-        max_seq_length=args.max_length,
+        max_length=args.max_length,
     )
 
     trainer = SFTTrainer(
