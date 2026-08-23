@@ -29,16 +29,23 @@ def main():
     parser.add_argument("--grad_acc", type=int, default=8)
     parser.add_argument("--max_length", type=int, default=4096)
     parser.add_argument("--lora_r", type=int, default=32)
+    parser.add_argument("--load_in_4bit", action="store_true",
+                         help="Use bitsandbytes 4-bit. Off by default - ROCm's bnb 4-bit "
+                              "dequant appears to be a major slowdown (100% GPU util, "
+                              "594s/it, only 34%% VRAM used on a 32B model with 192GB "
+                              "free); only worth it if the model genuinely won't fit in bf16.")
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from, or 'True' for latest")
     args = parser.parse_args()
 
     print(f"1. Loading {args.model_name} via plain Transformers (no Unsloth)...")
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-    )
+    bnb_config = None
+    if args.load_in_4bit:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
