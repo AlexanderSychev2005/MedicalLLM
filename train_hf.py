@@ -44,7 +44,10 @@ def main():
         args.model_name,
         quantization_config=bnb_config,
         dtype=torch.bfloat16,
-        device_map="auto",
+        # "auto" can conservatively offload part of the model to CPU even with VRAM
+        # to spare, which would explain low VRAM% + very slow steps (data shuttling
+        # over PCIe every forward/backward). Force everything onto the one GPU.
+        device_map={"": 0},
         # Let PyTorch's own SDPA dispatcher pick flash/mem-efficient/math itself,
         # instead of routing through Unsloth's package-presence-only check.
         attn_implementation="sdpa",
