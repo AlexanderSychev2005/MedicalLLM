@@ -97,15 +97,16 @@ def main():
         output_dir=args.output_dir,
         optim="adamw_8bit",
         seed=42,
+        # Newer TRL moved these from SFTTrainer's own kwargs into SFTConfig.
+        dataset_text_field="text",
+        max_seq_length=args.max_length,
     )
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,  # newer TRL/Trainer renamed tokenizer= to this
         train_dataset=dataset_train,
         eval_dataset=dataset_val,
-        dataset_text_field="text",
-        max_seq_length=args.max_length,
         args=training_args,
     )
 
