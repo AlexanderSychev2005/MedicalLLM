@@ -98,12 +98,11 @@ def main():
         learning_rate=2e-4,
         fp16=False,
         bf16=True,
-        # Safe to enable now: packing forces every step to full max_length, which is
-        # what caused the OOMs under Unsloth's broken quadratic-memory math attention
-        # backend. With working SDPA (confirmed: run survived batch=4/seq=8192 at 70%
-        # VRAM) packing is fine, and cuts wasted compute on padding for our many
-        # much-shorter-than-max_length examples.
-        packing=True,
+        # OFF: TRL warns explicitly that packing without flash_attention_2 (or the
+        # few other listed variants) can cross-contaminate attention between packed
+        # samples - SDPA isn't on that supported list. Correctness over speed; we're
+        # not chasing flash-attn on this ROCm stack again after how that went before.
+        packing=False,
         logging_steps=10,
         report_to="tensorboard",  # newer TRL dropped logging_dir; defaults under output_dir,
                                    # or set TENSORBOARD_LOGGING_DIR env var to override
