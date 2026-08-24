@@ -26,7 +26,9 @@ def main():
     parser.add_argument("--test_path", type=str, default="data/processed/hybrid/test.jsonl")
     parser.add_argument("--output_path", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--max_new_tokens", type=int, default=400)
+    # DiReCT/discharge_ie reference outputs regularly run past 400 tokens (long
+    # evidence-citation chains / full JSON) and were getting cut off mid-answer.
+    parser.add_argument("--max_new_tokens", type=int, default=900)
     args = parser.parse_args()
 
     print(f"Loading base model {args.base_model}...")
@@ -61,6 +63,12 @@ def main():
                     **inputs,
                     max_new_tokens=args.max_new_tokens,
                     do_sample=False,
+                    # Greedy decoding on a mid-training checkpoint can fall into
+                    # repeating itself (saw a 15-item near-identical list on
+                    # med_case_reasoning) - discourage looping without adding
+                    # sampling randomness.
+                    repetition_penalty=1.15,
+                    no_repeat_ngram_size=4,
                     pad_token_id=tokenizer.pad_token_id,
                 )
             generated_ids = output_ids[:, inputs["input_ids"].shape[1]:]
